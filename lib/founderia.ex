@@ -1,6 +1,6 @@
 defmodule Founderia do
 
-	defrecordp :state, [world: nil]
+	defrecordp :state, [worlds: nil]
 
 	# API
 	###############
@@ -9,17 +9,29 @@ defmodule Founderia do
 		spawn_link(Founderia, :loop, [state])
 	end
 
+	def home_world do
+		:erlang.whereis(:home_world)
+	end
+
 	# Private
 	################
 	defp init do
-		state(world: World.Builder.build_world)
+		home_world = World.Builder.build_world
+		:erlang.register(:home_world, home_world)
+		state(worlds: [home_world])
 	end
 	
 
-	defp loop(state) do
+	def loop(state) do
 		start_time = :erlang.now()
-		state = update_npcs(state)
-		loop(state)
+		receive do
+			message -> 
+				IO.puts inspect(message)
+				loop(state)
+		after 1000 ->
+						state = update_npcs(state)
+						loop(state)
+		end
 	end
 
 	defp update_npcs(state) do

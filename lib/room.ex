@@ -2,14 +2,45 @@ defmodule Room do
 
 	@on_load :seed_random
 
-	defrecordp :state, [x: 0, y: 0, height: 0.0, rand: 0.0, description: "", avatars: nil]
+	defrecordp :state, [id: nil, x: 0, y: 0, height: 0.0, rand: 0.0, description: "", avatar_ids: nil]
 
-	# api 
-	############
+	# "Class" API methods
+	######################
 
-	def start(x, y, description) do
-		state = state(x: x, y: y, rand: :random.uniform(), description: description, avatars: [])
+	def find(id) do
+		data = Data.Store.retrieve(:room, id)
+		cond do
+			data == nil ->
+				{:error, :not_found}
+			true ->
+				#Util.Log.debug(data)
+				state = list_to_tuple([Room | Enum.map(data, fn({key, value}) -> value end)])
+				start(state)
+		end
+	end
+
+	def new(x, y, description) do
+		state = state(x: x, y: y, rand: :random.uniform(), description: description, avatar_ids: [])
+		state = state(state, id: Util.Id.hash(state))
+		start(state)
+	end
+
+	def start(state) do
 		spawn_link(Room, :loop, [state])
+	end
+
+
+	# "Instance" API methods 
+	######################
+
+	def save(room_pid) do
+		room_pid <- {self(), :save}
+		sync_return(:save)
+	end
+
+	def id(room_pid) do
+		room_pid <- {self(), :id}
+		sync_return(:id)
 	end
 
 	def coords(room_pid) do
@@ -53,7 +84,7 @@ defmodule Room do
 		sync_return(:avatars)
 	end
 
-	# private
+	# Private
 	###############
 
 	def loop(state) do
@@ -65,6 +96,22 @@ defmodule Room do
 	end
 
 	# handlers
+
+	defp handle(:save, state, sender) do
+		case Data.Store.persist(:room, state(state, :id), state(state)) do
+			:ok ->
+				sender <- {:save, true}
+			_ ->
+				sender <- {:save, false}
+		end
+		state
+	end
+
+	defp handle(:id, state, sender) do
+		sender <- {:id, state(state, :id)}
+		state
+	end
+
 	defp handle(:coords, state, sender) do
 		sender <- {:coords, {state(state, :x), state(state, :y)}}
 		state
@@ -90,22 +137,22 @@ defmodule Room do
 	end
 
 	defp handle({:exit, avatar, _to_coords}, state, sender) do
-		avatars = state(state, :avatars)
-		avatars = List.delete(avatars, avatar) 
+		avatar_ids = state(state, :avatar_ids)
+		avatar_ids = List.delete(avatar_ids, Avatar.id(avatar)) 
 		sender <- {:exit, true}
-		state(state, avatars: avatars)
+		state(state, avatar_ids: avatar_ids)
 	end
 
 	defp handle({:enter, avatar, from_coords}, state, sender) do
 		Util.Log.debug("#{inspect avatar} is entering #{inspect self()} from #{inspect from_coords}")
-		avatars = state(state, :avatars)
-		avatars = [avatar | avatars]
+		avatar_ids = state(state, :avatar_ids)
+		avatars = [Avitar.id(avatar) | avatar_ids]
 		sender <- {:enter, true}
-		state(state, avatars: avatars)
+		state(state, avatar_ids: avatar_ids)
 	end
 
 	defp handle(:avatars, state, sender) do
-		sender <- {:avatars, state(state, :avatars)}
+		sender <- {:avatars, state(state, :avatar_ids)}
 		state
 	end
 

@@ -16,7 +16,7 @@ defmodule World.Builder do
 	defp create(world) do
 		coord_list = Enum.to_list(@grid_bottom .. @grid_top)
 		room_list = lc x inlist coord_list, y inlist coord_list do
-			Room.start(x, y, room_description(x, y))
+			Room.new(x, y, room_description(x, y))
 		end
 		place(room_list, world)
 		generate_height(world)

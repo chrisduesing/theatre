@@ -2,15 +2,39 @@ defmodule Avatar do
 
 	defrecordp :state, [id: nil, name: nil, wounds: nil, coords: nil, equipment: nil, inventory: nil, created_at: nil]
 
-	# api 
-	############
+	# "Class" API methods
+	######################
 
-	def start(name) do
+	def find(id) do
+		data = Data.Store.retrieve(:avatar, id)
+		cond do
+			data == nil ->
+				{:error, :not_found}
+			true ->
+				#Util.Log.debug(data)
+				state = list_to_tuple([Avatar | Enum.map(data, fn({key, value}) -> value end)])
+				start(state)
+		end
+	end
+
+	def new(name) do
 		equipment = HashDict.new([head: nil, torso: nil, arms: nil, legs: nil, feet: nil, held: nil]) #items
 		inventory = HashDict.new([back: nil, belt: nil, carried: nil]) # containers
 		state = state(name: name, coords: nil, equipment: equipment, inventory: inventory, created_at: :erlang.now())
 		state = state(state, id: Util.Id.hash(state))
+		start(state)
+	end
+
+	def start(state) do
 		spawn_link(Avatar, :loop, [state])
+	end
+
+	# "Instance" API methods 
+	######################
+
+	def save(avatar_pid) do
+		avatar_pid <- {self(), :save}
+		sync_return(:save)
 	end
 
 	def id(avatar_pid) do
@@ -59,6 +83,17 @@ defmodule Avatar do
 	end
 
 	# handlers
+
+	defp handle(:save, state, sender) do
+		case Data.Store.persist(:avatar, state(state, :id), state(state)) do
+			:ok ->
+				sender <- {:save, true}
+			_ ->
+				sender <- {:save, false}
+		end
+		state
+	end
+
 	defp handle(:id, state, sender) do
 		sender <- {:id, state(state, :id)}
 		state

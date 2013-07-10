@@ -1,7 +1,8 @@
 Elixir.World.Builder
 Elixir.World
+Elixir.Room
 Elixir.Util.Log
 Elixir.Util.Id
-Elixir.Room
 Elixir.Avatar
 Elixir.Founderia
+Elixir.Data.Store
