@@ -1,4 +1,7 @@
-Elixir.WorldBuilder
-Elixir.Room
+Elixir.World.Builder
 Elixir.World
+Elixir.Util.Log
+Elixir.Util.Id
+Elixir.Room
+Elixir.Avatar
 Elixir.Founderia

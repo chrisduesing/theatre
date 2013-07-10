@@ -1,41 +1,62 @@
-defrecord World, geography: HashDict.new
-defrecord Room, x: 0, y: 0, description: ""
-
-defmodule WorldBuilder do
+defmodule World do
 	
-	def new do
-		world = init()
-		create(world)
+	defrecordp :state, [rooms: HashDict.new]
+
+	# api 
+	############
+
+	def start do
+		state = state()
+		spawn_link(World, :loop, [state])
 	end
 
-	defp init do
-		World.new
+	def room(world_pid, coords) do
+		world_pid <- {self, {:room, coords}}
+		sync_return(:room)
 	end
 
-	defp create(world) do
-		coord_list = Enum.to_list(1 .. 10)
-		room_list = lc x inlist coord_list, y inlist coord_list do
-			room(x, y, room_description(x, y))
+	def add_room(world_pid, coords, room_pid) do
+		world_pid <- {self, {:add_room, coords, room_pid}}
+	end
+
+	# private
+	###############
+
+	def loop(state) do
+		receive do
+			{sender, message} ->
+				state = handle(message, state, sender)
 		end
-		place(room_list, world)
+		loop(state)
 	end
 
-	defp room_description(x, y) do
-		"Room at #{x}, #{y}"
+	# handlers
+	defp handle({:room, {x, y}}, state, sender) do
+		sender <- {:room, Dict.get(state(state, :rooms), {x, y})}
+		state
 	end
 
-	defp room(x, y, description) do
-		Room.new(x: x, y: y, description: description)
+	defp handle({:add_room, {x, y}, room}, state, _sender) do
+		rooms = Dict.put(state(state, :rooms), {x, y}, room)
+		state(state, rooms: rooms)
 	end
 
-	defp place([], world) do
-		world
+	# error
+	defp handle(_, state, sender) do
+		sender <- { :error, :unknown_command }
+		state
 	end
 
-	defp place([room | tail], world) do
-		point = {room.x, room.y}
-		geography = Dict.put(world.geography, point, room)
-		place(tail, world.geography(geography))
+	# util
+	defp sync_return(msg_type) do 
+		receive do
+			{^msg_type, message} ->
+				message
+		after 1000 ->
+						:error
+		end
 	end
 
 end
+
+
