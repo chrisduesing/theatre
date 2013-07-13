@@ -1,6 +1,7 @@
 Elixir.World.Builder
 Elixir.World
 Elixir.Room
+Elixir.Perlin
 Elixir.Util.Log
 Elixir.Util.Id
 Elixir.Avatar
