@@ -1,60 +1,40 @@
 defmodule World do
+	use Actor
 	
-	defrecordp :state, [rooms: HashDict.new]
+		# API methods
+	######################
 
-	# api 
-	############
-
-	def start do
-		state = state()
-		spawn_link(World, :loop, [state])
+	def new(name) do
+		state = HashDict.new([name: name, areas: HashDict.new])
+		start(state)
 	end
 
-	def room(world_pid, coords) do
-		world_pid <- {self, {:room, coords}}
-		sync_return(:room)
-	end
+	attribute :name, :string
 
-	def add_room(world_pid, coords, room_pid) do
-		world_pid <- {self, {:add_room, coords, room_pid}}
-	end
+	def area(world_pid, name), do: sync_call(world_pid, {:area, name})
+	def area(world_pid, name, area_pid), do: sync_call(world_pid, {:area, name, area_pid})
 
-	# private
+
+	# Private
 	###############
 
-	def loop(state) do
-		receive do
-			{sender, message} ->
-				state = handle(message, state, sender)
-		end
-		loop(state)
-	end
-
-	# handlers
-	defp handle({:room, {x, y}}, state, sender) do
-		sender <- {:room, Dict.get(state(state, :rooms), {x, y})}
+	defp handle({:area, name}, state, sender) do
+		areas = Dict.get(state, :areas)
+		area = Dict.get(areas, name)
+		sender <- {:area, area}
 		state
 	end
 
-	defp handle({:add_room, {x, y}, room}, state, _sender) do
-		rooms = Dict.put(state(state, :rooms), {x, y}, room)
-		state(state, rooms: rooms)
+	defp handle({:area, name, area}, state, _sender) do
+		areas = Dict.get(state, :areas)
+		areas = Dict.put(areas, name, area)
+		Dict.put(state, :rooms, rooms)
 	end
 
 	# error
 	defp handle(_, state, sender) do
 		sender <- { :error, :unknown_command }
 		state
-	end
-
-	# util
-	defp sync_return(msg_type) do 
-		receive do
-			{^msg_type, message} ->
-				message
-		after 1000 ->
-						:error
-		end
 	end
 
 end

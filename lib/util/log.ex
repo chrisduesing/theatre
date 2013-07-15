@@ -7,4 +7,11 @@ defmodule Util.Log do
 		|> IO.puts
 	end
 
+	def debug(x, args) do 
+    :io_lib.format(x, args)
+    |> :lists.flatten
+    |> :erlang.list_to_binary
+		|> IO.puts
+	end
+
 end

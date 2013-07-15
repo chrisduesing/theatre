@@ -1,9 +1,12 @@
 {application,founderia,
-             [{registered,[]},
+             [{registered,[founderia]},
               {description,"founderia"},
               {vsn,"0.0.1"},
-              {modules,['Elixir.Avatar','Elixir.Data.Store',
-                        'Elixir.Founderia','Elixir.Perlin','Elixir.Room',
-                        'Elixir.Util.Id','Elixir.Util.Log',
-                        'Elixir.World.Builder','Elixir.World']},
-              {applications,[kernel,stdlib,elixir]}]}.
+              {modules,['Elixir.Actor.Attribute','Elixir.Actor',
+                        'Elixir.Avatar','Elixir.Data.Store',
+                        'Elixir.Founderia','Elixir.Math.Perlin','Elixir.Room',
+                        'Elixir.T','Elixir.Util.Id','Elixir.Util.Log',
+                        'Elixir.World.Area','Elixir.World.Builder',
+                        'Elixir.World']},
+              {applications,[kernel,stdlib,elixir]},
+              {mod,{'Elixir.Founderia',[]}}]}.

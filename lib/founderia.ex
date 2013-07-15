@@ -1,12 +1,19 @@
 defmodule Founderia do
+	use Application.Behaviour
 
 	defrecordp :state, [worlds: nil]
 
 	# API
 	###############
-	def start do
+	def start(_type, _args) do
 		state = init()
-		spawn_link(Founderia, :loop, [state])
+		pid = spawn_link(Founderia, :loop, [state])
+		:erlang.register(:founderia, pid)
+		{:ok, pid}
+	end
+
+	def founderia do
+		:erlang.whereis(:founderia)
 	end
 
 	def home_world do
@@ -16,6 +23,7 @@ defmodule Founderia do
 	# Private
 	################
 	defp init do
+		Data.Store.start
 		home_world = World.Builder.build_world
 		:erlang.register(:home_world, home_world)
 		state(worlds: [home_world])

@@ -1,4 +1,4 @@
-defmodule Perlin do
+defmodule Math.Perlin do
 	use Bitwise
 
 	@octaves 4

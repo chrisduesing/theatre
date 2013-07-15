@@ -4,13 +4,11 @@ defmodule World.Builder do
 	@grid_top 4
 	
 	def build_world do
-		world = init()
-		create(world)
+		world = World.new("Home World")
+		area = Area.new("Outside")
+		create_rooms(area)
+		World.area world, Area.name area, area
 		world
-	end
-
-	defp init do
-		World.start
 	end
 
 	defp create(world) do
@@ -18,44 +16,44 @@ defmodule World.Builder do
 		room_list = lc x inlist coord_list, y inlist coord_list do
 			Room.new(x, y, room_description(x, y))
 		end
-		place(room_list, world)
-		generate_height(world)
+		place(room_list, area)
+		generate_height(area)
 	end
 
 	defp room_description(x, y) do
 		"Room at #{x}, #{y}"
 	end
 
-	defp place([], _world) do
+	defp place([], _area) do
 		:ok
 	end
 
-	defp place([room | tail], world) do
+	defp place([room | tail], area) do
 		point = Room.coords(room)
-		World.add_room(world, point, room)
-		place(tail, world)
+		Area.room(area, point, room)
+		place(tail, area)
 	end
 
-	defp generate_height(world) do
-		height_from_rand(@grid_bottom, @grid_bottom, world)
+	defp generate_height(area) do
+		height_from_rand(@grid_bottom, @grid_bottom, area)
 	end
 
-	defp height_from_rand(@grid_top, @grid_top, _world) do
+	defp height_from_rand(@grid_top, @grid_top, _area) do
 		:ok
 	end
 
-	defp height_from_rand(x, y, world) do
-		room = World.room(world, {x, y})
-		potential_rooms = [World.room(world, {x + 1, y}), World.room(world, {x, y + 1}), World.room(world, {x - 1, y}), World.room(world, {x, y - 1})]
+	defp height_from_rand(x, y, area) do
+		room = Area.room(area, {x, y})
+		potential_rooms = [Area.room(area, {x + 1, y}), Area.room(area, {x, y + 1}), Area.room(area, {x - 1, y}), Area.room(area, {x, y - 1})]
 		adjacent_rooms = Enum.filter(potential_rooms, fn(room) -> room != nil end)
 		rands = Enum.map(adjacent_rooms, fn(room) -> Room.rand(room) end)
 		sum = Enum.reduce(rands, 0, fn(x, acc) -> x + acc end)
 		average = sum / length(rands)
 		Room.update_height(room, average)
 		if x + 1 > @grid_top do
-			height_from_rand(@grid_bottom, y + 1, world)
+			height_from_rand(@grid_bottom, y + 1, area)
 		else
-			height_from_rand(x + 1, y, world)
+			height_from_rand(x + 1, y, area)
 		end
 	end
 	
