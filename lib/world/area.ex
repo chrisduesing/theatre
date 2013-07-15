@@ -1,4 +1,4 @@
-defmodule World.Area do
+defmodule Area do
 	use Actor
 
 	# API methods
@@ -12,22 +12,22 @@ defmodule World.Area do
 	attribute :name, :string
 
 	def room(area_pid, coords), do: sync_call(area_pid, {:room, coords})
-	def room(area_pid, coords, room_pid), do: sync_call(area_pid, {:room, coords, room_pid})
+	def room(area_pid, coords, room_pid), do: async_call(area_pid, {:room, coords, room_pid})
 
 
 	# Private
 	###############
 
-	defp handle({:room, {x, y}}, state, sender) do
+	defp handle({:room, coords}, state, sender) do
 		rooms = Dict.get(state, :rooms)
-		room = Dict.get(rooms, {x, y})
+		room = Dict.get(rooms, coords)
 		sender <- {:room, room}
 		state
 	end
 
-	defp handle({:room, {x, y}, room}, state, _sender) do
+	defp handle({:room, coords, room}, state, _sender) do
 		rooms = Dict.get(state, :rooms)
-		rooms = Dict.put(rooms, {x, y}, room)
+		rooms = Dict.put(rooms, coords, room)
 		Dict.put(state, :rooms, rooms)
 	end
 

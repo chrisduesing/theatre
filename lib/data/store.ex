@@ -39,7 +39,6 @@ defmodule Data.Store do
 			false
 		else
 			caller = self()
-			Util.Log.debug("Data Store register(~p, ~p, ~p) called by ~p~n", [type, id, pid, caller])
 			data_store <- {caller, {:register, type, id, pid}}
 			sync_return(:register)
 		end
@@ -70,7 +69,6 @@ defmodule Data.Store do
 
 	# handlers
 	defp handle({:retrieve, type, id}, state, sender) do
-		Util.Log.debug("Data Store is retrieving #{id}")
 		data_dict = Dict.get(state, :data)
 		type_dict = Dict.get(data_dict, type)
 		instance_data = Dict.get(type_dict, id)
@@ -79,7 +77,6 @@ defmodule Data.Store do
 	end
 
 	defp handle({:persist, type, id, data}, state, sender) do
-		Util.Log.debug("Data Store is persisting #{id}")
 		data_dict = Dict.get(state, :data)
 		type_dict = Dict.get(data_dict, type)
 		if type_dict == nil do
@@ -93,7 +90,6 @@ defmodule Data.Store do
 	end
 
 	defp handle({:register, type, id, pid}, state, sender) do
-		Util.Log.debug("Data Store is registering #{id}")
 		pid_dict = Dict.get(state, :pids)
 		type_dict = Dict.get(pid_dict, type)
 		if type_dict == nil do
@@ -107,11 +103,9 @@ defmodule Data.Store do
 	end
 
 	defp handle({:lookup, type, pid}, state, sender) do
-		Util.Log.debug("Data Store is looking up ~p~n", [:erlang.pid_to_list(pid)])
 		pid_dict = Dict.get(state, :pids)
 		type_dict = Dict.get(pid_dict, type)
 		id = Dict.get(type_dict, :erlang.pid_to_list(pid))
-		Util.Log.debug("Data Store found ~p~n", [id])
 		sender <- {:lookup, id}
 		state
 	end

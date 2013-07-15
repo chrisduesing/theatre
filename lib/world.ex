@@ -28,7 +28,7 @@ defmodule World do
 	defp handle({:area, name, area}, state, _sender) do
 		areas = Dict.get(state, :areas)
 		areas = Dict.put(areas, name, area)
-		Dict.put(state, :rooms, rooms)
+		Dict.put(state, :areas, areas)
 	end
 
 	# error

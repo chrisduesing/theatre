@@ -1,13 +1,12 @@
 Elixir.World.Builder
-Elixir.World.Area
+Elixir.Area
 Elixir.World
 Elixir.Room
 Elixir.Util.Log
 Elixir.Util.Id
-Elixir.Math.Perlin
-Elixir.Data.Store
-Elixir.Founderia
 Elixir.Avatar
-Elixir.T
+Elixir.Math.Perlin
+Elixir.Founderia
+Elixir.Data.Store
 Elixir.Actor
 Elixir.Actor.Attribute

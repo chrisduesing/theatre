@@ -8,7 +8,6 @@ defmodule Actor do
 			end
 
 			def start(state) do
-				Util.Log.debug("Actor is starting")
 				state = actor_init(state)
 				pid = spawn_link(__MODULE__, :loop, [state])
 				Data.Store.register(__MODULE__, Dict.get(state, :id), pid)
@@ -16,7 +15,6 @@ defmodule Actor do
 			end
 
 			defp actor_init(state) do
-				Util.Log.debug("Actor is actor_initin")
 				if Dict.get(state, :created_at) == nil do
 					state = Dict.put(state, :created_at, :erlang.now())
 				end
@@ -27,12 +25,10 @@ defmodule Actor do
 			end
 
 			defp init(state) do
-				Util.Log.debug("Actor is initing")
 				state
 			end
 
       def loop(state) do
-				Util.Log.debug("Actor is looping")
 				receive do
 					{sender, message} ->
 						state = handle(message, state, sender)
@@ -50,7 +46,6 @@ defmodule Actor do
 			end
 
 			defp handle(:save, state, sender) do
-				Util.Log.debug("Actor is saving")
 				case Data.Store.persist(__MODULE__, Dict.get(state, :id), HashDict.to_list(state)) do
 					:ok ->
 						sender <- {:save, true}
@@ -70,7 +65,6 @@ defmodule Actor do
 			end
 
 			def find(id) do
-				Util.Log.debug("Actor is calling find #{id}")
 				data = Data.Store.retrieve(__MODULE__, id)
 				cond do
 					data == nil ->
@@ -82,7 +76,6 @@ defmodule Actor do
 			end
 
 			def ensure(pid) do
-				Util.Log.debug("Actor is ensuring pid is alive")
 				if :erlang.is_process_alive(pid) do
 					pid
 				else
@@ -92,17 +85,15 @@ defmodule Actor do
 			end
 
 			def sync_call(pid, data) do
-				Util.Log.debug("Actor is using sync_call")
 				msg_type = data
 				if :erlang.is_tuple(msg_type) do
-					[msg_type | _rest] = :erlang.tuple_to_list(data)
+					[msg_type | rest] = :erlang.tuple_to_list(data)
 				end
 				async_call(pid, data)
 				sync_return(msg_type)
 			end
 
 			def async_call(pid, data) do
-				Util.Log.debug("Actor is using async_call")
 				pid = ensure(pid)
 				pid <- {self(), data}
 			end

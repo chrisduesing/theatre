@@ -49,7 +49,7 @@ defmodule Actor.Attribute do
 			def unquote(attr)(pid), do: sync_call(pid, unquote(attr))
 			
 			defp handle(unquote(attr), state, sender) do 
-				sender <- {unquote(attr), {Dict.get(state, unquote(attr))}}
+				sender <- {unquote(attr), Dict.get(state, unquote(attr))}
 				state
 			end
 			

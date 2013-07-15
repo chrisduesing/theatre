@@ -3,8 +3,9 @@ defmodule Room do
 
 	# API 
 	######################	
-	def new(x, y, description) do
-		state = HashDict.new([x: x, y: y, rand: :random.uniform(), description: description, avatar_ids: []])
+
+	def new(coords, description) when is_tuple(coords) do
+		state = HashDict.new([coords: coords, rand: :random.uniform(), description: description, avatar_ids: []])
 		start(state)
 	end
 
@@ -25,6 +26,7 @@ defmodule Room do
 
 	# Private
 	###############
+
 	defp handle({:exit, avatar, _to_coords}, state, sender) do
 		avatars = Dict.get(state, :avatars)
 		avatars = List.delete(avatars, avatar) 

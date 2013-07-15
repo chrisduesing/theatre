@@ -1,157 +1,58 @@
 defmodule Avatar do
+	use Actor
 
-	defrecordp :state, [id: nil, name: nil, wounds: nil, coords: nil, equipment: nil, inventory: nil, created_at: nil]
-
-	# "Class" API methods
+	# API
 	######################
-
-	def find(id) do
-		data = Data.Store.retrieve(:avatar, id)
-		cond do
-			data == nil ->
-				{:error, :not_found}
-			true ->
-				#Util.Log.debug(data)
-				state = list_to_tuple([Avatar | Enum.map(data, fn({key, value}) -> value end)])
-				start(state)
-		end
-	end
 
 	def new(name) do
 		equipment = HashDict.new([head: nil, torso: nil, arms: nil, legs: nil, feet: nil, held: nil]) #items
 		inventory = HashDict.new([back: nil, belt: nil, carried: nil]) # containers
-		state = state(name: name, coords: nil, equipment: equipment, inventory: inventory, created_at: :erlang.now())
-		state = state(state, id: Util.Id.hash(state))
+		state = HashDict.new([name: name, world: nil, area: nil, room: nil, equipment: equipment, inventory: inventory, wounds: []])
 		start(state)
 	end
 
-	def start(state) do
-		spawn_link(Avatar, :loop, [state])
-	end
+	attribute :name, :string
+	attribute :world, :pid
+	attribute :area, :pid
+	attribute :room, :pid
+	attribute :wounds, :list
+	attribute :inventory, :tuple
+	attribute :equipment, :tuple
+	
+	def enter_world(avatar, world, area, room), do: sync_call(avatar, {:enter_world, world, area, room})
+	def move(avatar, direction), do: sync_call(avatar, {:move, direction, 1})
+	def wear(avatar, location, item), do: sync_call(avatar, {:wear, location, item})
 
-	# "Instance" API methods 
-	######################
 
-	def save(avatar_pid) do
-		avatar_pid <- {self(), :save}
-		sync_return(:save)
-	end
-
-	def id(avatar_pid) do
-		avatar_pid <- {self(), :id}
-		sync_return(:id)
-	end
-
-	def name(avatar_pid) do
-		avatar_pid <- {self(), :name}
-		sync_return(:name)
-	end
-
-	def coords(avatar_pid) do
-		avatar_pid <- {self(), :coords}
-		sync_return(:coords)
-	end
-
-	def enter_world(avatar_pid, world_pid, coords) do
-		avatar_pid <- {self(), {:enter_world, world_pid, coords}}
-		sync_return(:enter_world)
-	end
-
-	def move(avatar_pid, world_pid, coords) do
-		avatar_pid <- {self(), {:move, world_pid, coords}}
-		sync_return(:move)
-	end
-
-	def wear(avatar_pid, location, item) do
-		avatar_pid <- {self(), {:wear, location, item}}
-	end
-
-	def equipment(avatar_pid) do
-		avatar_pid <- {self(), :equipment}
-		sync_return(:equipment)
-	end
-
-	# private
+	# Private
 	###############
 
-	def loop(state) do
-		receive do
-			{sender, message} ->
-				state = handle(message, state, sender)
-		end
-		loop(state)
-	end
-
-	# handlers
-
-	defp handle(:save, state, sender) do
-		case Data.Store.persist(:avatar, state(state, :id), state(state)) do
-			:ok ->
-				sender <- {:save, true}
-			_ ->
-				sender <- {:save, false}
-		end
-		state
-	end
-
-	defp handle(:id, state, sender) do
-		sender <- {:id, state(state, :id)}
-		state
-	end
-
-	defp handle(:name, state, sender) do
-		sender <- {:name, state(state, :name)}
-		state
-	end
-
-	defp handle(:coords, state, sender) do
-		sender <- {:coords, state(state, :coords)}
-		state
-	end
-
-	defp handle(:equipment, state, sender) do
-		sender <- {:equipment, state(state, :equipment)}
-		state
-	end
-
-	defp handle({:wear, location, item}, state, sender) do
-		equipment = state(state, :equipment)
-		old_item = Dict.get(equipment, location)
-		equipment = Dict.put(equipment, location, item)
-		state = state(state, equipment: equipment)
-		# if old_equipment drop
-		state
-	end
-
-	defp handle({:enter_world, world, coords}, state, sender) do
-		room = World.room(world, coords)
-		if room do
-			entered = Room.enter(room, self(), nil)
-			if entered do
-				state = state(state, coords: coords)
-				sender <- {:enter_world, coords}
-				state
-			else
-				sender <- {:enter_world, {:error, :could_not_enter_room}}
-				state
-			end
+	defp handle({:enter_world, world, area, room}, state, sender) do
+		entered = Room.enter(room, self(), nil)
+		if entered do
+			state = Dict.put(state, :world, world)
+			state = Dict.put(state, :area, area)
+			state = Dict.put(state, :room, room)
+			sender <- {:enter_world, self()}
+			state
 		else
-			sender <- {:enter_world, {:error, :no_such_room}}
+			sender <- {:enter_world, {:error, :could_not_enter_room}}
 			state
 		end
 	end
 
-	defp handle({:move, world, coords}, state, sender) do
-		old_coords = state(state, :coords)
-		old_room = World.room(world, old_coords)
-		room = World.room(world, coords)
-		Util.Log.debug("#{inspect sender} that #{inspect self()} entered #{inspect room} at #{inspect coords}")
-		if is_pid(old_room) && is_pid(room) do
-			exited = Room.exit(old_room, self(), coords)
-			entered = Room.enter(room, self(), old_coords)
+	defp handle({:move, direction, distance}, state, sender) do
+		area = Dict.get(state, :area)
+		room = Dict.get(state, :room)
+		coords = Room.coords(room)
+		new_coords = new_coords(direction, distance, coords)
+		new_room = Area.room(area, new_coords)
+		if new_room do
+			exited = Room.exit(room, self(), new_coords)
+			entered = Room.enter(new_room, self(), coords)
 			if exited && entered do
-				state = state(state, coords: coords)
-				sender <- {:move, state(state, :coords)}
+				state = Dict.put(state, :room, new_room)
+				sender <- {:move, self()}
 				state
 			else
 				sender <- {:move, {:error, :could_not_go_there}}
@@ -163,20 +64,26 @@ defmodule Avatar do
 		end
 	end
 
+
+	defp handle({:wear, location, item}, state, sender) do
+		equipment = Dict.get(state, :equipment)
+		old_item = Dict.get(equipment, location)
+		equipment = Dict.put(equipment, location, item)
+		state = Dict.put(state, :equipment, equipment)
+		# if old_equipment drop
+		state
+	end
+
 	# error
 	defp handle(_, state, sender) do
 		sender <- { :error, :unknown_command }
 		state
 	end
 
-	defp sync_return(msg_type) do 
-		receive do
-			{^msg_type, message} ->
-				message
-		after 1000 ->
-						:error
-		end
-	end
-
+	# Helpers
+	def new_coords(:north, distance, {x, y} = coords), do: {x + distance, y}
+	def new_coords(:east,  distance, {x, y} = coords), do: {x, y + distance}
+	def new_coords(:south, distance, {x, y} = coords), do: {x - distance, y}
+	def new_coords(:west,  distance, {x, y} = coords), do: {x, y - distance}
 
 end
