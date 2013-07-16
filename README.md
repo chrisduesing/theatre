@@ -1,5 +1,5 @@
 # Founderia  
-A MUD engine
+A MUD engine, written in Elixir
 
 ## Actors
 Each actor is a running process, backed by a module that implements Actor. Every interaction between actors works based on pids, rather than an identifier.
@@ -11,14 +11,14 @@ Each model has a .new and .find(id) method, in order to re-constitute relationsh
 Due to the reliance on PIDs, if a process dies your handle to an actor is worthless. Actors address this by registering themselves with the storage system when they are created, and each of their api methods calls ensure(pid) to make sure it is alive. If it is not, it does a database lookup and creates a new pid with the same data. This is completely transparent process to the caller. 
 
 One caveat is that the actor holding the reference to the dead pid will keep using it, causing the overhead of a lookup/new process for every call. To address this we need to:  
-1) Resolve find to an already living pid, if there is one, rather than creating a new one.
+1) Resolve find to an already living pid, if there is one, rather than creating a new one.  
 2) Use the notification system to swap out held reference pids in state behind the scenes.
 
 ### Persistence 
 Currently Data.Store just keeps everything in a hash. Needs to add at least dets tables to persist across restarts.
 
 ToDo:  
-1) Investigate need for data conversion to and from storage, current model data is a nested hashdict.
+1) Investigate need for data conversion to and from storage, current model data is a nested hashdict.  
 2) Consider document store like Riak, ORM mapping sounds horrible.
 
 ### A web of living objects
