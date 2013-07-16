@@ -5,8 +5,8 @@
               {modules,['Elixir.Actor.Attribute','Elixir.Actor.ErrorHandler',
                         'Elixir.Actor','Elixir.Area','Elixir.Avatar',
                         'Elixir.Data.Store','Elixir.Founderia',
-                        'Elixir.Math.Perlin','Elixir.Room','Elixir.Util.Id',
-                        'Elixir.Util.Log','Elixir.World.Builder',
-                        'Elixir.World']},
+                        'Elixir.Math.Perlin','Elixir.Player','Elixir.Room',
+                        'Elixir.Util.Id','Elixir.Util.Log',
+                        'Elixir.World.Builder','Elixir.World']},
               {applications,[kernel,stdlib,elixir]},
               {mod,{'Elixir.Founderia',[]}}]}.

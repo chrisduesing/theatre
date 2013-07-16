@@ -33,6 +33,9 @@ defmodule Actor do
 			def subscribe(pid, event_type, subscriber), do: sync_call(pid, :add_subscriber, {event_type, subscriber})
 			def unsubscribe(pid, event_type, subscriber), do: sync_call(pid, :remove_subscriber, {event_type, subscriber})
 
+			# sending events to just one subscriber
+			def notify(pid, event_type, message), do: pid <- {:event, event_type, message, self()}
+
 			# Create Process
 			#####################
 

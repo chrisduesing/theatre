@@ -5,7 +5,7 @@ defmodule Room do
 	######################	
 
 	def new(coords, description) when is_tuple(coords) do
-		state = HashDict.new([coords: coords, rand: :random.uniform(), description: description, avatar_ids: []])
+		state = HashDict.new([coords: coords, rand: :random.uniform(), description: description, avatars: []])
 		start(state)
 	end
 
@@ -31,6 +31,7 @@ defmodule Room do
 		avatars = Dict.get(state, :avatars)
 		avatars = List.delete(avatars, avatar) 
 		sender <- {:exit, true}
+		broadcast(:room_events, {:exit, avatar}, state)
 		Dict.put(state, :avatars, avatars)
 	end
 
@@ -38,6 +39,9 @@ defmodule Room do
 		avatars = Dict.get(state, :avatars)
 		avatars = [avatar | avatars]
 		sender <- {:enter, true}
+		broadcast(:room_events, {:enter, avatar}, state)
+		description = Dict.get(state, :description)
+		Avatar.notify(avatar, :room_events, {:room, [description: description, avatars: avatars]})
 		Dict.put(state, :avatars, avatars)
 	end
 	

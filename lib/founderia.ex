@@ -20,6 +20,24 @@ defmodule Founderia do
 		:erlang.whereis(:main_world)
 	end
 
+	def test do
+		firedrake = Avatar.new("Firedrake")
+		player = Player.new(firedrake)
+
+		world = main_world
+		area = World.main_area(world)
+		room = Area.room(area, {0,0})
+		avatar1 = Avatar.new("Avatar 1")
+		avatar2 = Avatar.new("Avatar 2")
+		Avatar.enter_world(avatar1, world, area, room)
+		Avatar.enter_world(avatar2, world, area, room)
+
+		Player.play player
+
+		Avatar.move(avatar2, :south)
+		Avatar.move(avatar2, :north)
+	end
+
 	# Private
 	################
 	defp init do

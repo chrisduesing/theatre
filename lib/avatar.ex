@@ -33,6 +33,7 @@ defmodule Avatar do
 			state = Dict.put(state, :world, world)
 			state = Dict.put(state, :area, area)
 			state = Dict.put(state, :room, room)
+			Room.subscribe(room, :room_events, self())
 			sender <- {:enter_world, self()}
 			state
 		else
@@ -77,9 +78,10 @@ defmodule Avatar do
 	end
 
 	defp handle(:event, :room_events, message, state, _sender) do
-		IO.puts "The room I am in just told me #{ inspect message}"
+		broadcast(:room_events, message, state)
 		state
 	end
+
 
 	# error
 	handle_unknown
