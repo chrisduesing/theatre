@@ -19,15 +19,15 @@ defmodule Avatar do
 	attribute :inventory, :tuple
 	attribute :equipment, :tuple
 	
-	def enter_world(avatar, world, area, room), do: sync_call(avatar, {:enter_world, world, area, room})
-	def move(avatar, direction), do: sync_call(avatar, {:move, direction, 1})
-	def wear(avatar, location, item), do: sync_call(avatar, {:wear, location, item})
+	def enter_world(avatar, world, area, room), do: sync_call(avatar, :enter_world, {world, area, room})
+	def move(avatar, direction), do: sync_call(avatar, :move, {direction, 1})
+	def wear(avatar, location, item), do: sync_call(avatar, :wear, {location, item})
 
 
 	# Private
 	###############
 
-	defp handle({:enter_world, world, area, room}, state, sender) do
+	defp handle(:api, :enter_world, {world, area, room}, state, sender) do
 		entered = Room.enter(room, self(), nil)
 		if entered do
 			state = Dict.put(state, :world, world)
@@ -41,15 +41,17 @@ defmodule Avatar do
 		end
 	end
 
-	defp handle({:move, direction, distance}, state, sender) do
+	defp handle(:api, :move, {direction, distance}, state, sender) do
 		area = Dict.get(state, :area)
 		room = Dict.get(state, :room)
 		coords = Room.coords(room)
 		new_coords = new_coords(direction, distance, coords)
 		new_room = Area.room(area, new_coords)
 		if new_room do
+			Room.unsubscribe(room, :room_events, self())
 			exited = Room.exit(room, self(), new_coords)
 			entered = Room.enter(new_room, self(), coords)
+			Room.subscribe(new_room, :room_events, self())
 			if exited && entered do
 				state = Dict.put(state, :room, new_room)
 				sender <- {:move, self()}
@@ -65,25 +67,27 @@ defmodule Avatar do
 	end
 
 
-	defp handle({:wear, location, item}, state, sender) do
+	defp handle(:api, :wear, {location, item}, state, _sender) do
 		equipment = Dict.get(state, :equipment)
-		old_item = Dict.get(equipment, location)
+		_old_item = Dict.get(equipment, location)
 		equipment = Dict.put(equipment, location, item)
 		state = Dict.put(state, :equipment, equipment)
 		# if old_equipment drop
 		state
 	end
 
-	# error
-	defp handle(_, state, sender) do
-		sender <- { :error, :unknown_command }
+	defp handle(:event, :room_events, message, state, _sender) do
+		IO.puts "The room I am in just told me #{ inspect message}"
 		state
 	end
 
+	# error
+	handle_unknown
+
 	# Helpers
-	def new_coords(:north, distance, {x, y} = coords), do: {x + distance, y}
-	def new_coords(:east,  distance, {x, y} = coords), do: {x, y + distance}
-	def new_coords(:south, distance, {x, y} = coords), do: {x - distance, y}
-	def new_coords(:west,  distance, {x, y} = coords), do: {x, y - distance}
+	def new_coords(:north, distance, {x, y}), do: {x + distance, y}
+	def new_coords(:east,  distance, {x, y}), do: {x, y + distance}
+	def new_coords(:south, distance, {x, y}), do: {x - distance, y}
+	def new_coords(:west,  distance, {x, y}), do: {x, y - distance}
 
 end

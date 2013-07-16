@@ -3,67 +3,14 @@ defmodule Actor do
   defmacro __using__(_opts) do
     quote do
 
-			def new do
-				start(HashDict.new)
-			end
-
-			def start(state) do
-				state = actor_init(state)
-				pid = spawn_link(__MODULE__, :loop, [state])
-				Data.Store.register(__MODULE__, Dict.get(state, :id), pid)
-				pid
-			end
-
-			defp actor_init(state) do
-				if Dict.get(state, :created_at) == nil do
-					state = Dict.put(state, :created_at, :erlang.now())
-				end
-				if Dict.get(state, :id) == nil do
-					state = Dict.put(state, :id, Util.Id.hash(state))
-				end
-				init(state)
-			end
-
-			defp init(state) do
-				state
-			end
-
-      def loop(state) do
-				receive do
-					{sender, message} ->
-						state = handle(message, state, sender)
-				end
-				loop(state)
-			end
-
-			def save(pid) do
-				pid <- {self(), :save}
-				sync_return(:save)
-			end
-
-			def stop(pid) do
-				:erlang.exit(pid, :kill) 
-			end
-
-			defp handle(:save, state, sender) do
-				case Data.Store.persist(__MODULE__, Dict.get(state, :id), HashDict.to_list(state)) do
-					:ok ->
-						sender <- {:save, true}
-					_ ->
-						sender <- {:save, false}
-				end
-				state
-			end
-
-			def id(pid) do
-				sync_call(pid, :id)
-			end
-
-			defp handle(:id, state, sender) do
-				sender <- {:id, Dict.get(state, :id)}
-				state
-			end
-
+			# Module Public API
+			#####################
+			
+			# overridable, must call start
+			def new, do: start(HashDict.new)
+			
+			# look up data by id
+			# will not locate an existing process, may result in duplicates
 			def find(id) do
 				data = Data.Store.retrieve(__MODULE__, id)
 				cond do
@@ -74,8 +21,110 @@ defmodule Actor do
 						start(state)
 				end
 			end
+			
+			# Instance Public API
+			#####################
 
-			def ensure(pid) do
+			def id(pid), do: sync_call(pid, :id)
+			def save(pid), do: sync_call(pid, :save)
+			def stop(pid), do: :erlang.exit(pid, :kill) 
+
+			# ask to be notified of certain events
+			def subscribe(pid, event_type, subscriber), do: sync_call(pid, :add_subscriber, {event_type, subscriber})
+			def unsubscribe(pid, event_type, subscriber), do: sync_call(pid, :remove_subscriber, {event_type, subscriber})
+
+			# Create Process
+			#####################
+
+			defp start(state) do
+				state = actor_init(state)
+				pid = spawn_link(__MODULE__, :loop, [state])
+				Data.Store.register(__MODULE__, Dict.get(state, :id), pid)
+				pid
+			end
+
+			# called by start, can't make private or spawn won't work
+      def loop(state) do
+				receive do
+					{source, message_type, message, sender} when is_pid(sender) ->
+						state = handle(source, message_type, message, state, sender)
+					error ->
+						handle(:unknown, :error, error, state, nil)
+				end
+				loop(state)
+			end
+
+			# Instance Private
+			#####################
+
+			defp actor_init(state) do
+				if Dict.get(state, :created_at) == nil do
+					state = Dict.put(state, :created_at, :erlang.now())
+				end
+				if Dict.get(state, :id) == nil do
+					state = Dict.put(state, :id, Util.Id.hash(state))
+				end
+				if Dict.get(state, :subscribers) == nil do
+					state = Dict.put(state, :subscribers, HashDict.new)
+				end
+				init(state)
+			end
+
+			# overridable, must return state
+			defp init(state), do: state
+
+			# Handlers
+			###################
+
+			# save
+			defp handle(:api, :save, nil, state, sender) do
+				case Data.Store.persist(__MODULE__, Dict.get(state, :id), HashDict.to_list(state)) do
+					:ok ->
+						sender <- {:save, true}
+					_ ->
+						sender <- {:save, false}
+				end
+				state
+			end
+
+			# id
+			defp handle(:api, :id, nil, state, sender) do
+				sender <- {:id, Dict.get(state, :id)}
+				state
+			end
+
+			defp handle(:api, :add_subscriber, {event_type, subscriber}, state, sender) do
+				subscribers = Dict.get(state, :subscribers)
+				event_subscribers = Dict.get(subscribers, event_type, [])
+				event_subscribers = [subscriber | event_subscribers]
+				subscribers = Dict.put(subscribers, event_type, event_subscribers)
+				state = Dict.put(state, :subscribers, subscribers)
+				sender <- {:add_subscriber, :ok}
+				state
+			end
+
+			defp handle(:api, :remove_subscriber, {event_type, subscriber}, state, sender) do
+				subscribers = Dict.get(state, :subscribers)
+				event_subscribers = Dict.get(subscribers, event_type, [])
+				event_subscribers = List.delete(event_subscribers, subscriber)
+				subscribers = Dict.put(subscribers, event_type, event_subscribers)
+				state = Dict.put(state, :subscribers, subscribers)
+				sender <- {:remove_subscriber, :ok}
+				state
+			end
+
+			# Private Utilities
+			#########################
+
+			# brodcast to my listeners
+			defp broadcast(event_type, message, state) do
+				subscribers = Dict.get(state, :subscribers)
+				event_subscribers = Dict.get(subscribers, event_type, [])
+				Enum.each(event_subscribers, fn(subscriber) -> subscriber <- {:event, event_type, message, self()} end)
+			end
+			
+			# am I alive?
+			def ensure(pid) when is_pid(pid) do
 				if :erlang.is_process_alive(pid) do
 					pid
 				else
@@ -84,20 +133,28 @@ defmodule Actor do
 				end
 			end
 
-			def sync_call(pid, data) do
-				msg_type = data
-				if :erlang.is_tuple(msg_type) do
-					[msg_type | rest] = :erlang.tuple_to_list(data)
-				end
-				async_call(pid, data)
-				sync_return(msg_type)
+			# helper for api functions
+			# makes synchronous call to appropriate handler
+			def sync_call(pid, message_type) do
+				sync_call(pid, message_type, nil) 
 			end
 
-			def async_call(pid, data) do
+			def sync_call(pid, message_type, message) do
+				async_call(pid, message_type, message)
+				sync_return(message_type)
+			end
+
+			# makes asynchronous call to appropriate handler
+			def async_call(pid, message_type) do
+				async_call(pid, message_type, nil) 
+			end
+
+			def async_call(pid, message_type, message) do
 				pid = ensure(pid)
-				pid <- {self(), data}
+				pid <- {:api, message_type, message, self()}
 			end
 
+			# waits for response from handler and returns it to caller
 			defp sync_return(msg_type) do 
 				receive do
 					{^msg_type, message} ->
@@ -107,10 +164,15 @@ defmodule Actor do
 				end
 			end
 
+			# implementing class can override these
       defoverridable [new: 0, init: 1]
 
+			# import and include dependancies
 			require Actor.Attribute
 			import Actor.Attribute
+
+			require Actor.ErrorHandler
+			import Actor.ErrorHandler
 
     end
   end

@@ -4,22 +4,16 @@ defmodule World.Builder do
 	@grid_top 4
 	
 	def build_world do
-		IO.puts 1
 		world = World.new("Home World")
-		IO.puts 2
 		area = Area.new("Outside")
-		IO.puts 3
 		create_rooms(area)
-		IO.puts 4
 		World.area(world, Area.name(area), area)
-		IO.puts 5
 		world
 	end
 
 	defp create_rooms(area) do
 		coord_list = Enum.to_list(@grid_bottom .. @grid_top)
 		room_list = lc x inlist coord_list, y inlist coord_list do
-			IO.puts "room #{x} #{y}"
 			Room.new({x, y}, room_description(x, y))
 		end
 		place(room_list, area)
@@ -36,8 +30,6 @@ defmodule World.Builder do
 
 	defp place([room | tail], area) do
 		coords = Room.coords(room)
-		IO.puts "placing room:"
-		IO.inspect coords
 		Area.room(area, coords, room)
 		place(tail, area)
 	end
@@ -51,9 +43,7 @@ defmodule World.Builder do
 	end
 
 	defp height_from_rand(x, y, area) do
-		IO.puts "height_from_rand(#{x}, #{y}, #{inspect area})"
 		room = Area.room(area, {x, y})
-		IO.puts "#{ inspect room }"
 		potential_rooms = [Area.room(area, {x + 1, y}), Area.room(area, {x, y + 1}), Area.room(area, {x - 1, y}), Area.room(area, {x, y - 1})]
 		adjacent_rooms = Enum.filter(potential_rooms, fn(room) -> room != nil end)
 		rands = Enum.map(adjacent_rooms, fn(room) -> Room.rand(room) end)

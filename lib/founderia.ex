@@ -31,7 +31,7 @@ defmodule Founderia do
 	
 
 	def loop(state) do
-		start_time = :erlang.now()
+		_start_time = :erlang.now()
 		receive do
 			message -> 
 				IO.puts inspect(message)
