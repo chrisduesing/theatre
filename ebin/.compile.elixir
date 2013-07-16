@@ -1,8 +1,8 @@
 Elixir.World.Builder
 Elixir.Area
 Elixir.World
-Elixir.Room
 Elixir.Util.Log
+Elixir.Room
 Elixir.Util.Id
 Elixir.Player
 Elixir.Avatar

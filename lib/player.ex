@@ -6,23 +6,20 @@ defmodule Player do
 
 	attribute :avatar, :pid
 
-	def new(avatar) do
-		state = HashDict.new([avatar: avatar])
+	def new() do
+		state = HashDict.new([avatar: nil])
 		start(state)
 	end
 
-	def play(player_pid), do: sync_call(player_pid, :play)
+	def play(player, avatar, world, area, room), do: sync_call(player, :play, {avatar, world, area, room})
 
 
 	# Private
 	###############
 
-	defp handle(:api, :play, nil, state, sender) do
-		avatar = Dict.get(state, :avatar)
+	defp handle(:api, :play, {avatar, world, area, room}, state, sender) do
+		state = Dict.put(state, :avatar, avatar)
 		Avatar.subscribe(avatar, :room_events, self())
-		world = Founderia.main_world
-		area = World.main_area(world)
-		room = Area.room(area, {0,0})
 		Avatar.enter_world(avatar, world, area, room)
 		sender <- {:play, :ok}
 		state

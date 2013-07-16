@@ -21,19 +21,28 @@ defmodule Founderia do
 	end
 
 	def test do
-		firedrake = Avatar.new("Firedrake")
-		player = Player.new(firedrake)
-
-		world = main_world
+		# get the world, area and a room
+		world = Founderia.main_world
 		area = World.main_area(world)
 		room = Area.room(area, {0,0})
+		
+		# create a couple NPCs
 		avatar1 = Avatar.new("Avatar 1")
 		avatar2 = Avatar.new("Avatar 2")
+
+		# add them to the world
 		Avatar.enter_world(avatar1, world, area, room)
 		Avatar.enter_world(avatar2, world, area, room)
 
-		Player.play player
+		# create a player's avatar
+		firedrake = Avatar.new("Firedrake")
+		player = Player.new
 
+		# assign the avatar to the player
+		# and enter the world
+		Player.play(player, firedrake, world, area, room)
+
+		# make a npc walk around
 		Avatar.move(avatar2, :south)
 		Avatar.move(avatar2, :north)
 	end
