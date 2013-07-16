@@ -14,6 +14,8 @@ defmodule World do
 	def area(world_pid, name), do: sync_call(world_pid, :area, {:get, name})
 	def area(world_pid, name, area_pid), do: sync_call(world_pid, :area, {:put, name, area_pid})
 
+	def main_area(world_pid), do: sync_call(world_pid, :area, {:get, "Main"})
+	def main_area(world_pid, area_pid), do: sync_call(world_pid, :area, {:put, "Main", area_pid})
 
 	# Private
 	###############

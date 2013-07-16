@@ -12,7 +12,7 @@ defmodule Area do
 	attribute :name, :string
 
 	def room(area_pid, coords), do: sync_call(area_pid, :room, {:get, coords})
-	def room(area_pid, coords, room_pid), do: async_call(area_pid, :room, {:set, coords, room_pid})
+	def room(area_pid, coords, room_pid), do: async_call(area_pid, :room, {:put, coords, room_pid})
 
 
 	# Private
@@ -25,7 +25,7 @@ defmodule Area do
 		state
 	end
 
-	defp handle(:api, :room, {:set, coords, room}, state, _sender) do
+	defp handle(:api, :room, {:put, coords, room}, state, _sender) do
 		rooms = Dict.get(state, :rooms)
 		rooms = Dict.put(rooms, coords, room)
 		Dict.put(state, :rooms, rooms)

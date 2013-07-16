@@ -4,10 +4,10 @@ defmodule World.Builder do
 	@grid_top 4
 	
 	def build_world do
-		world = World.new("Home World")
+		world = World.new("The World")
 		area = Area.new("Outside")
 		create_rooms(area)
-		World.area(world, Area.name(area), area)
+		World.main_area(world, area)
 		world
 	end
 

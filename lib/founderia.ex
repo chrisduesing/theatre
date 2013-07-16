@@ -16,17 +16,17 @@ defmodule Founderia do
 		:erlang.whereis(:founderia)
 	end
 
-	def home_world do
-		:erlang.whereis(:home_world)
+	def main_world do
+		:erlang.whereis(:main_world)
 	end
 
 	# Private
 	################
 	defp init do
 		Data.Store.start
-		home_world = World.Builder.build_world
-		:erlang.register(:home_world, home_world)
-		state(worlds: [home_world])
+		main_world = World.Builder.build_world
+		:erlang.register(:main_world, main_world)
+		state(worlds: [main_world])
 	end
 	
 
