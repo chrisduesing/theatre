@@ -16,39 +16,32 @@ Some kind of persistence, though it would be nice to just use ets or something f
 
 World can serve as the lookup point for live processes, translate things like coords to rooms
 
-# Command line usage
+# An example
 
-iex(1)> founderia = Founderia.founderia  
-PID 0.81.0
+	def test do
+		firedrake = Avatar.new("Firedrake")
+		player = Player.new(firedrake)
 
-iex(2)> world = Founderia.home_world  
-PID 0.54.0
+		world = main_world
+		area = World.main_area(world)
+		room = Area.room(area, {0,0})
+		avatar1 = Avatar.new("Avatar 1")
+		avatar2 = Avatar.new("Avatar 2")
+		Avatar.enter_world(avatar1, world, area, room)
+		Avatar.enter_world(avatar2, world, area, room)
 
-iex(3)> area = World.area(world, "Outside")  
-PID 0.55.0
+		Player.play player
 
-iex(4)> room = Area.room(area, {1, 1})  
-PID 0.62.0
+		Avatar.move(avatar2, :south)
+		Avatar.move(avatar2, :north)
+	end
 
-iex(5)> firedrake = Avatar.new("Firedrake")  
-PID 0.82.0
 
-iex(6)> Avatar.e  
-ensure/1         enter_world/4    equipment/1      equipment/2  
-iex(6)> Avatar.enter_world(firedrake, world, area, room)  
-PID 0.82.0
+iex(1)> Founderia.test
+Room at 0, 0  
+The room has the following occupants:  
+Avatar 2  
+Avatar 1  
 
-iex(7)> Avatar.room firedrake  
-PID 0.62.0
-
-iex(8)> Avatar.move firedrake, :south  
-PID 0.82.0
-
-iex(9)> Avatar.room firedrake  
-PID 0.57.0
-
-iex(10)> room = Avatar.room firedrake  
-PID 0.57.0
-
-iex(11)> Room.description room  
-"Room at 0, 1"
+Avatar 2 just left the room.  
+Avatar 2 just entered the room.  
