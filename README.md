@@ -37,7 +37,7 @@ World can serve as the lookup point for live processes, translate things like co
 	end
 
 
-iex(1)> Founderia.test
+iex(1)> Founderia.test  
 Room at 0, 0  
 The room has the following occupants:  
 Avatar 2  
