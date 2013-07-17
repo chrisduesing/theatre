@@ -4,7 +4,7 @@ defmodule World do
 	# API methods
 	######################
   
-def new(name) do
+  def new(name) do
     state = HashDict.new([name: name, areas: HashDict.new])
     start(state)
   end
