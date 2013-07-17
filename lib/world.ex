@@ -21,18 +21,18 @@ defmodule World do
   ###############
   
   defp handle(:api, :area, {:get, name}, state, sender) do
-		areas = Dict.get(state, :areas)
+    areas = Dict.get(state, :areas)
 		area = Dict.get(areas, name)
 		sender <- {:area, area}
 		state
-	end
+  end
   
-	defp handle(:api, :area, {:put, name, area}, state, sender) do
-		areas = Dict.get(state, :areas)
-		areas = Dict.put(areas, name, area)
-		sender <- {:area, :ok}
-		Dict.put(state, :areas, areas)
-	end
+  defp handle(:api, :area, {:put, name, area}, state, sender) do
+    areas = Dict.get(state, :areas)
+    areas = Dict.put(areas, name, area)
+    sender <- {:area, :ok}
+    Dict.put(state, :areas, areas)
+  end
   
   
 	# error
