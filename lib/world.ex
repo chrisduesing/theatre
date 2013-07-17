@@ -4,10 +4,10 @@ defmodule World do
 	# API methods
 	######################
   
-	def new(name) do
-		state = HashDict.new([name: name, areas: HashDict.new])
-		start(state)
-	end
+def new(name) do
+    state = HashDict.new([name: name, areas: HashDict.new])
+    start(state)
+  end
   
   attribute :name, :string
   
