@@ -1,8 +1,8 @@
 defmodule World do
   use Actor
 	
-	# API methods
-	######################
+  # API methods
+  ######################
   
   def new(name) do
     state = HashDict.new([name: name, areas: HashDict.new])
@@ -35,8 +35,8 @@ defmodule World do
   end
   
   
-	# error
-	handle_unknown
+  # error
+  handle_unknown
   
 end
 
