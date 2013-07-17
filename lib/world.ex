@@ -1,6 +1,6 @@
 defmodule World do
   use Actor
-	
+  
   # API methods
   ######################
   
@@ -22,9 +22,9 @@ defmodule World do
   
   defp handle(:api, :area, {:get, name}, state, sender) do
     areas = Dict.get(state, :areas)
-		area = Dict.get(areas, name)
-		sender <- {:area, area}
-		state
+    area = Dict.get(areas, name)
+    sender <- {:area, area}
+    state
   end
   
   defp handle(:api, :area, {:put, name, area}, state, sender) do

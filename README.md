@@ -32,32 +32,32 @@ Area holds a hashmap reference to its rooms and provides facilities for lookup v
 
 ## An example
 
-	def test do
-		# get the world, area and a room
-		world = Founderia.main_world
-		area = World.main_area(world)
-		room = Area.room(area, {0,0})
-		
-		# create a couple NPCs
-		avatar1 = Avatar.new("Avatar 1")
-		avatar2 = Avatar.new("Avatar 2")
+  def test do
+    # get the world, area and a room
+    world = Founderia.main_world
+    area = World.main_area(world)
+    room = Area.room(area, {0,0})
+    
+    # create a couple NPCs
+    avatar1 = Avatar.new("Avatar 1")
+    avatar2 = Avatar.new("Avatar 2")
 
-		# add them to the world
-		Avatar.enter_world(avatar1, world, area, room)
-		Avatar.enter_world(avatar2, world, area, room)
+    # add them to the world
+    Avatar.enter_world(avatar1, world, area, room)
+    Avatar.enter_world(avatar2, world, area, room)
 
-		# create a player's avatar
-		firedrake = Avatar.new("Firedrake")
-		player = Player.new
+    # create a player's avatar
+    firedrake = Avatar.new("Firedrake")
+    player = Player.new
 
-		# assign the avatar to the player
-		# and enter the world
-		Player.play(player, firedrake, world, area, room)
+    # assign the avatar to the player
+    # and enter the world
+    Player.play(player, firedrake, world, area, room)
 
-		# make a npc walk around
-		Avatar.move(avatar2, :south)
-		Avatar.move(avatar2, :north)
-	end
+    # make a npc walk around
+    Avatar.move(avatar2, :south)
+    Avatar.move(avatar2, :north)
+  end
 
 iex(1)> Founderia.test  
 Room at 0, 0  
