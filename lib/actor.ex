@@ -8,19 +8,24 @@ defmodule Actor do
       
       # overridable, must call start
       def new, do: start(HashDict.new)
-      
+
       # look up data by id
-      # will not locate an existing process, may result in duplicates
       def find(id) do
-        data = Data.Store.retrieve(__MODULE__, id)
-        cond do
-          data == nil ->
-            {:error, :not_found}
-          true ->
-            state = HashDict.new(data)
-            start(state)
+        pid = Data.Store.lookup(__MODULE__, id)
+        if :erlang.is_process_alive(pid) do
+          pid
+        else
+          data = Data.Store.retrieve(__MODULE__, id)
+          cond do
+            data == nil ->
+              {:error, :not_found}
+            true ->
+              state = HashDict.new(data)
+              start(state)
+          end
         end
       end
+      
       
       # Instance Public API
       #####################
@@ -42,7 +47,8 @@ defmodule Actor do
       defp start(state) do
         state = actor_init(state)
         pid = spawn_link(__MODULE__, :loop, [state])
-        Data.Store.register(__MODULE__, Dict.get(state, :id), pid)
+        id = Dict.get(state, :id)
+        Data.Store.register(__MODULE__, id, pid, state)
         pid
       end
 
@@ -128,11 +134,17 @@ defmodule Actor do
       
       # am I alive?
       def ensure(pid) when is_pid(pid) do
-        if :erlang.is_process_alive(pid) do
-          pid
-        else
-          id = Data.Store.lookup(__MODULE__, pid)
-          find(id)
+        cond do
+          :erlang.is_process_alive(pid) ->
+            pid
+          true ->
+            id = Data.Store.lookup(__MODULE__, pid)
+            pid = Data.Store.lookup(__MODULE__, id)
+            if :erlang.is_process_alive(pid) do
+              pid
+            else
+              find(id)
+            end
         end
       end
 

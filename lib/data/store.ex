@@ -1,12 +1,10 @@
 defmodule Data.Store do
 
-  #defrecordp :state, [avatars: nil, rooms: nil, worlds: nil]
-
   # API functions
   ######################
 
   def start do
-    state = HashDict.new(data: HashDict.new, pids: HashDict.new)
+    state = HashDict.new(data_by_id: HashDict.new, id_by_pid: HashDict.new, pid_by_id: HashDict.new)
     pid = spawn(Data.Store, :loop, [state])
     :erlang.register(:data_store, pid)
   end
@@ -32,25 +30,25 @@ defmodule Data.Store do
     end
   end
 
-  def register(type, id, pid) do
+  def register(type, id, pid, data) do
     data_store = :erlang.whereis(:data_store)
     if data_store == :undefined do
       Util.Log.debug("Data Store is Undefined!")
       false
     else
       caller = self()
-      data_store <- {caller, {:register, type, id, pid}}
+      data_store <- {caller, {:register, type, id, pid, data}}
       sync_return(:register)
     end
   end
 
-  def lookup(type, pid) do
+  def lookup(type, id_or_pid) do
     data_store = :erlang.whereis(:data_store)
     if data_store == :undefined do
       Util.Log.debug("Data Store is Undefined!")
       false
     else
-      data_store <- {self(), {:lookup, type, pid}}
+      data_store <- {self(), {:lookup, type, id_or_pid}}
       sync_return(:lookup)
     end
   end
@@ -67,46 +65,39 @@ defmodule Data.Store do
   end
 
 
-  # handlers
+  # Handlers
+  ################
+
   defp handle({:retrieve, type, id}, state, sender) do
-    data_dict = Dict.get(state, :data)
-    type_dict = Dict.get(data_dict, type)
-    instance_data = Dict.get(type_dict, id)
-    sender <- {:retrieve, instance_data}
+    data = get_data(state, type, id)
+    sender <- {:retrieve, data}
     state
   end
 
   defp handle({:persist, type, id, data}, state, sender) do
-    data_dict = Dict.get(state, :data)
-    type_dict = Dict.get(data_dict, type)
-    if type_dict == nil do
-      data_dict = Dict.put(data_dict, type, HashDict.new)
-      type_dict = Dict.get(data_dict, type)
-    end
-    type_dict = Dict.put(type_dict, id, data)
-    data_dict = Dict.put(data_dict, type, type_dict)
+    state = put_data(state, type, id, data) 
     sender <- {:persist, :ok}
-    Dict.put(state, :data, data_dict)
+    state
   end
 
-  defp handle({:register, type, id, pid}, state, sender) do
-    pid_dict = Dict.get(state, :pids)
-    type_dict = Dict.get(pid_dict, type)
-    if type_dict == nil do
-      pid_dict = Dict.put(pid_dict, type, HashDict.new)
-      type_dict = Dict.get(pid_dict, type)
-    end
-    type_dict = Dict.put(type_dict, :erlang.pid_to_list(pid), id)
-    pid_dict = Dict.put(pid_dict, type, type_dict)
+  defp handle({:register, type, id, pid, data}, state, sender) do
+    state = put_id(state, type, pid, id) 
+    state = put_pid(state, type, id, pid) 
+    state = put_data(state, type, id, data) 
     sender <- {:register, :ok}
-    Dict.put(state, :pids, pid_dict)
+    state
   end
 
-  defp handle({:lookup, type, pid}, state, sender) do
-    pid_dict = Dict.get(state, :pids)
-    type_dict = Dict.get(pid_dict, type)
-    id = Dict.get(type_dict, :erlang.pid_to_list(pid))
+  defp handle({:lookup, type, pid}, state, sender) when is_pid(pid) do
+    id = get_id(state, type, pid)
     sender <- {:lookup, id}
+    state
+  end
+
+  defp handle({:lookup, type, id}, state, sender) do
+    pid_list = get_pid(state, type, id)
+    pid = :erlang.list_to_pid(pid_list)
+    sender <- {:lookup, pid}
     state
   end
   
@@ -125,5 +116,49 @@ defmodule Data.Store do
     end
   end
 
+  # Helpers
+  ##############
+
+  defp get_data(state, type, id) do
+    data_dict = Dict.get(state, :data_by_id)
+    type_dict = Dict.get(data_dict, type, HashDict.new)
+    Dict.get(type_dict, id)
+  end
+
+  defp put_data(state, type, id, data) do
+    data_dict = Dict.get(state, :data_by_id)
+    type_dict = Dict.get(data_dict, type, HashDict.new)
+    type_dict = Dict.put(type_dict, id, data)
+    data_dict = Dict.put(data_dict, type, type_dict)
+    Dict.put(state, :data_by_id, data_dict)
+  end
+
+  defp get_id(state, type, pid) do
+    data_dict = Dict.get(state, :id_by_pid)
+    type_dict = Dict.get(data_dict, type, HashDict.new)
+    Dict.get(type_dict, :erlang.pid_to_list(pid))
+  end
+
+  defp put_id(state, type, pid, id) do
+    id_dict = Dict.get(state, :id_by_pid)
+    type_dict = Dict.get(id_dict, type, HashDict.new)
+    type_dict = Dict.put(type_dict, :erlang.pid_to_list(pid), id)
+    id_dict = Dict.put(id_dict, type, type_dict)
+    Dict.put(state, :id_by_pid, id_dict)
+  end
+
+  defp get_pid(state, type, id) do
+    data_dict = Dict.get(state, :pid_by_id)
+    type_dict = Dict.get(data_dict, type, HashDict.new)
+    Dict.get(type_dict, id)
+  end
+
+  defp put_pid(state, type, id, pid) do
+    pid_dict = Dict.get(state, :pid_by_id)
+    type_dict = Dict.get(pid_dict, type, HashDict.new)
+    type_dict = Dict.put(type_dict, id, :erlang.pid_to_list(pid))
+    pid_dict = Dict.put(pid_dict, type, type_dict)
+    Dict.put(state, :pid_by_id, pid_dict)
+  end
 
 end
