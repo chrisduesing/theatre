@@ -4,7 +4,7 @@ defmodule Data.Store do
   ######################
 
   def start do
-    state = HashDict.new(data_by_id: HashDict.new, id_by_pid: HashDict.new, pid_by_id: HashDict.new)
+    state = HashDict.new(data_by_id: HashDict.new, id_by_pid: HashDict.new, pid_by_id: HashDict.new, pid_locks: HashDict.new, lock_subscribers: HashDict.new)
     pid = spawn(Data.Store, :loop, [state])
     :erlang.register(:data_store, pid)
   end
@@ -84,6 +84,9 @@ defmodule Data.Store do
     state = put_id(state, type, pid, id) 
     state = put_pid(state, type, id, pid) 
     state = put_data(state, type, id, data) 
+    lock_subscribers = get_lock_subscribers(state, id)
+    Enum.each lock_subscribers, fn(subscriber) -> subscriber <- {:unlocked, pid} end
+    state = reset_lock_subscribers(state, id)
     sender <- {:register, :ok}
     state
   end
@@ -95,9 +98,18 @@ defmodule Data.Store do
   end
 
   defp handle({:lookup, type, id}, state, sender) do
-    pid_list = get_pid(state, type, id)
-    pid = :erlang.list_to_pid(pid_list)
-    sender <- {:lookup, pid}
+    pid = get_pid(state, type, id)
+    if :erlang.is_process_alive(pid) do
+      sender <- {:lookup, {:ok, pid}}
+    else
+      if get_pid_lock(state, id) == nil do
+        state = put_pid_lock(state, id, sender)
+        sender <- {:lookup, {:error, :locking}}
+      else
+        state = add_lock_subscriber(state, id, sender)
+        sender <- {:lookup, {:wait, :locked}}
+      end
+    end
     state
   end
   
@@ -150,7 +162,8 @@ defmodule Data.Store do
   defp get_pid(state, type, id) do
     data_dict = Dict.get(state, :pid_by_id)
     type_dict = Dict.get(data_dict, type, HashDict.new)
-    Dict.get(type_dict, id)
+    pid_list = Dict.get(type_dict, id)
+    :erlang.list_to_pid(pid_list)
   end
 
   defp put_pid(state, type, id, pid) do
@@ -159,6 +172,36 @@ defmodule Data.Store do
     type_dict = Dict.put(type_dict, id, :erlang.pid_to_list(pid))
     pid_dict = Dict.put(pid_dict, type, type_dict)
     Dict.put(state, :pid_by_id, pid_dict)
+  end
+
+  defp get_pid_lock(state, id) do
+    pid_lock_dict = Dict.get(state, :pid_locks)
+    Dict.get(pid_lock_dict, id)
+  end
+
+  defp put_pid_lock(state, id, pid) do
+    pid_lock_dict = Dict.get(state, :pid_locks)
+    pid_lock_dict = Dict.put(pid_lock_dict, id, :erlang.pid_to_list(pid))
+    Dict.put(state, :pid_locks, pid_lock_dict)
+  end
+
+  defp get_lock_subscribers(state, id) do
+    lock_subscribers_dict = Dict.get(state, :lock_subscribers)
+    Dict.get(lock_subscribers_dict, id, [])
+  end
+
+  defp add_lock_subscriber(state, id, lock_subscriber) do
+    lock_subscribers_dict = Dict.get(state, :lock_subscribers)
+    lock_subscribers = Dict.get(lock_subscribers_dict, id, [])
+    lock_subscribers = [lock_subscriber | lock_subscribers]
+    lock_subscribers_dict = Dict.put(lock_subscribers, id, lock_subscribers)
+    Dict.put(state, :lock_subscribers, lock_subscribers_dict)
+  end
+
+  defp reset_lock_subscribers(state, id) do
+    lock_subscribers_dict = Dict.get(state, :lock_subscribers)
+    lock_subscribers_dict = Dict.put(lock_subscribers_dict, id, [])
+    Dict.put(state, :lock_subscribers, lock_subscribers_dict)
   end
 
 end

@@ -11,21 +11,29 @@ defmodule Actor do
 
       # look up data by id
       def find(id) do
-        pid = Data.Store.lookup(__MODULE__, id)
-        if :erlang.is_process_alive(pid) do
-          pid
-        else
-          data = Data.Store.retrieve(__MODULE__, id)
-          cond do
-            data == nil ->
-              {:error, :not_found}
-            true ->
-              state = HashDict.new(data)
-              start(state)
-          end
+        result = Data.Store.lookup(__MODULE__, id)
+        case result do
+          {:ok, pid} -> 
+            pid
+          {:wait, :locked} ->
+            receive do
+              {:unlocked, pid} -> pid
+            end
+          other ->
+            lookup_data_and_start(id)
+        end          
+      end
+
+      defp lookup_data_and_start(id) do
+        data = Data.Store.retrieve(__MODULE__, id)
+        cond do
+          data == nil ->
+            {:error, :not_found}
+          true ->
+            state = HashDict.new(data)
+            start(state)
         end
       end
-      
       
       # Instance Public API
       #####################
@@ -139,12 +147,7 @@ defmodule Actor do
             pid
           true ->
             id = Data.Store.lookup(__MODULE__, pid)
-            pid = Data.Store.lookup(__MODULE__, id)
-            if :erlang.is_process_alive(pid) do
-              pid
-            else
-              find(id)
-            end
+            find(id)
         end
       end
 
