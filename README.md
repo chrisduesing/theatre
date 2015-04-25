@@ -1,5 +1,5 @@
-# Founderia  
-A MUD engine, written in Elixir
+# Theatre, where Founderia's plays are held
+A simulation engine written in Elixir
 
 ## Actors
 Each actor is a running process, backed by a module that implements Actor. Every interaction between actors works based on pids, rather than an identifier.

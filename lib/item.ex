@@ -1,0 +1,1 @@
+defrecord Item, name: nil, purpose: nil, width: 0, height: 0, depth: 0, weight: 0

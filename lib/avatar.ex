@@ -7,7 +7,7 @@ defmodule Avatar do
   def new(name) do
     equipment = HashDict.new([head: nil, torso: nil, arms: nil, legs: nil, feet: nil, held: nil]) #items
     inventory = HashDict.new([back: nil, belt: nil, carried: nil]) # containers
-    state = HashDict.new([name: name, world: nil, area: nil, room: nil, equipment: equipment, inventory: inventory, wounds: []])
+    state = HashDict.new([name: name, world: nil, area: nil, room: nil, equipment: equipment, inventory: inventory, wounds: [], states: [], skills: []])
     start(state)
   end
 
@@ -18,6 +18,8 @@ defmodule Avatar do
   attribute :wounds, :list
   attribute :inventory, :tuple
   attribute :equipment, :tuple
+  attribute :states, :list
+  attribute :skills, :list
   
   def enter_world(avatar, world, area, room), do: sync_call(avatar, :enter_world, {world, area, room})
   def move(avatar, direction), do: sync_call(avatar, :move, {direction, 1})
