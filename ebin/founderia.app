@@ -1,6 +1,6 @@
-{application,founderia,
-             [{registered,[founderia]},
-              {description,"founderia"},
+{application,theatre,
+             [{registered,[theatre]},
+              {description,"theatre"},
               {vsn,"0.0.1"},
               {modules,['Elixir.Actor.Attribute','Elixir.Actor.ErrorHandler',
                         'Elixir.Actor','Elixir.Area','Elixir.Avatar',
@@ -9,4 +9,4 @@
                         'Elixir.Util.Id','Elixir.Util.Log',
                         'Elixir.World.Builder','Elixir.World']},
               {applications,[kernel,stdlib,elixir]},
-              {mod,{'Elixir.Founderia',[]}}]}.
+              {mod,{'Elixir.Theatre',[]}}]}.
