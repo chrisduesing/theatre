@@ -1,16 +1,16 @@
-defmodule Founderia.Mixfile do
+defmodule Theatre.Mixfile do
   use Mix.Project
 
   def project do
-    [ app: :founderia,
+    [ app: :theatre,
       version: "0.0.1",
       deps: deps ]
   end
 
   # Configuration for the OTP application
   def application do
-    [ registered: [:founderia], 
-      mod: { Founderia, [] } ]
+    [ registered: [:theatre], 
+      mod: { Theatre, [] } ]
   end
 
   # Returns the list of dependencies in the format:
