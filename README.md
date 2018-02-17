@@ -1,4 +1,4 @@
-# Theatre, where Founderia's plays are held
+# Theatre
 A simulation engine written in Elixir
 
 ## Actors
@@ -24,7 +24,7 @@ ToDo:
 ### A web of living objects
 Due to the nature of having live objects that exist with no relationship to queries or requests, there needs to be a good way to find entry points to the objects you want to interact with.
 
-Founderia holds a reference to the main world, which it builds at startup.
+Theatre holds a reference to the main world, which it builds at startup.
 
 World holds a reference to its main area (presumably the outdoors).
 
@@ -34,7 +34,7 @@ Area holds a hashmap reference to its rooms and provides facilities for lookup v
 
   def test do
     # get the world, area and a room
-    world = Founderia.main_world
+    world = Theatre.main_world
     area = World.main_area(world)
     room = Area.room(area, {0,0})
     
@@ -59,7 +59,7 @@ Area holds a hashmap reference to its rooms and provides facilities for lookup v
     Avatar.move(avatar2, :north)
   end
 
-iex(1)> Founderia.test  
+iex(1)> Theatre.test  
 Room at 0, 0  
 The room has the following occupants:  
 Avatar 2  
