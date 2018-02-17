@@ -1,4 +1,4 @@
-defmodule Founderia do
+defmodule Theatre do
   use Application.Behaviour
   
   defrecordp :state, [worlds: nil]
@@ -7,13 +7,13 @@ defmodule Founderia do
   ###############
   def start(_type, _args) do
     state = init()
-    pid = spawn_link(Founderia, :loop, [state])
-    :erlang.register(:founderia, pid)
+    pid = spawn_link(Theatre, :loop, [state])
+    :erlang.register(:theatre, pid)
     {:ok, pid}
   end
   
-  def founderia do
-    :erlang.whereis(:founderia)
+  def theatre do
+    :erlang.whereis(:theatre)
   end
   
   def main_world do
