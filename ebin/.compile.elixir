@@ -6,7 +6,7 @@ Elixir.Util.Log
 Elixir.Util.Id
 Elixir.Player
 Elixir.Math.Perlin
-Elixir.Founderia
+Elixir.Theatre
 Elixir.Avatar
 Elixir.Data.Store
 Elixir.Actor.ErrorHandler
